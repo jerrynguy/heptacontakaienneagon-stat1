@@ -43,7 +43,7 @@ Mỗi lần bạn push code lên `main`, **GitHub Actions tự build và chạy 
 
 1. Làm bước 1 và 2 của Cách 2 trên một máy Windows.
 2. Bấm đúp **`build_windows.bat`**. Script tự cài PyInstaller rồi đóng gói theo `hstat.spec`.
-3. File mới nằm ở `dist\HeptacontakaienneagonStat.exe`. Chạy thử nhanh: `pwsh packaging\smoke_test.ps1 -Exe dist\HeptacontakaienneagonStat.exe` (mở app 5 lần, kiểm tra không bị tắt đột ngột). Muốn cập nhật bản cho người khác tải thì chép file đó đè lên `download\HeptacontakaienneagonStat.exe`.
+3. File mới nằm ở `dist\HeptacontakaienneagonStat.exe`. Chạy thử nhanh: `powershell -ExecutionPolicy Bypass -File packaging\smoke_test.ps1 -Exe dist\HeptacontakaienneagonStat.exe` (mở app 5 lần, kiểm tra không bị tắt đột ngột). Muốn cập nhật bản cho người khác tải thì chép file đó đè lên `download\HeptacontakaienneagonStat.exe`.
 
 ## Hướng dẫn sử dụng
 
