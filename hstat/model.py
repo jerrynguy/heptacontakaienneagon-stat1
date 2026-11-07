@@ -3,13 +3,15 @@ from __future__ import annotations
 
 import csv
 import json
-import random
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from .attributes import ATTRIBUTES, ATTR_BY_KEY, GROUP_BY_KEY
+
+DEFAULT_MAX_VALUE = 999   # thang điểm tối đa mặc định của mỗi chỉ số
+DEFAULT_BASE = 100        # giá trị khởi đầu của nhân vật mới (10% thang điểm)
 
 FILE_FORMAT = "heptacontakaienneagon-stat"
 FILE_VERSION = 1
@@ -48,7 +50,6 @@ def default_global_fields() -> list[FieldDef]:
     return [
         FieldDef("Hạng", "choice", ["—", "S", "A", "B", "C", "D", "E", "F"], key="rank"),
         FieldDef("Độ ưu tiên nâng cấp", "rating", key="priority"),
-        FieldDef("Mô tả", "longtext", key="description"),
         FieldDef("Hiệu ứng / Ảnh hưởng", "longtext", key="effects"),
         FieldDef("Nguồn / Cách đạt được", "text", key="source"),
         FieldDef("Yêu cầu / Điều kiện", "text", key="requirements"),
@@ -61,7 +62,7 @@ def default_global_fields() -> list[FieldDef]:
 
 @dataclass
 class StatEntry:
-    base: int = 10
+    base: int = DEFAULT_BASE
     bonus: int = 0
     values: dict[str, Any] = field(default_factory=dict)
     local_fields: list[FieldDef] = field(default_factory=list)
@@ -75,7 +76,7 @@ class StatEntry:
 
     @classmethod
     def from_dict(cls, d: dict) -> "StatEntry":
-        return cls(base=int(d.get("base", 10)), bonus=int(d.get("bonus", 0)),
+        return cls(base=int(d.get("base", DEFAULT_BASE)), bonus=int(d.get("bonus", 0)),
                    values=dict(d.get("values", {})),
                    local_fields=[FieldDef.from_dict(x) for x in d.get("local_fields", [])])
 
@@ -105,13 +106,17 @@ class Character:
 
 @dataclass
 class Project:
-    max_value: int = 99
+    max_value: int = DEFAULT_MAX_VALUE
     icons: dict[str, str] = field(default_factory=dict)      # icon tùy chỉnh theo key thuộc tính
+    descriptions: dict[str, str] = field(default_factory=dict)  # mô tả đã sửa (ghi đè mặc định)
     global_fields: list[FieldDef] = field(default_factory=default_global_fields)
     characters: list[Character] = field(default_factory=list)
 
     def icon_for(self, attr_key: str) -> str:
         return self.icons.get(attr_key) or ATTR_BY_KEY[attr_key].icon
+
+    def description_for(self, attr_key: str) -> str:
+        return self.descriptions.get(attr_key) or ATTR_BY_KEY[attr_key].description
 
     def fields_for(self, entry: StatEntry) -> list[FieldDef]:
         return [*self.global_fields, *entry.local_fields]
@@ -119,14 +124,16 @@ class Project:
     # ---------- I/O ----------
     def to_dict(self) -> dict:
         return {"format": FILE_FORMAT, "version": FILE_VERSION, "max_value": self.max_value,
-                "icons": dict(self.icons), "global_fields": [f.to_dict() for f in self.global_fields],
+                "icons": dict(self.icons), "descriptions": dict(self.descriptions),
+                "global_fields": [f.to_dict() for f in self.global_fields],
                 "characters": [c.to_dict() for c in self.characters]}
 
     @classmethod
     def from_dict(cls, d: dict) -> "Project":
         if d.get("format") != FILE_FORMAT:
             raise ValueError("Không phải file của Heptacontakaienneagon Stat")
-        p = cls(max_value=int(d.get("max_value", 99)), icons=dict(d.get("icons", {})),
+        p = cls(max_value=int(d.get("max_value", DEFAULT_MAX_VALUE)), icons=dict(d.get("icons", {})),
+                descriptions=dict(d.get("descriptions", {})),
                 global_fields=[FieldDef.from_dict(x) for x in d.get("global_fields", [])],
                 characters=[Character.from_dict(c) for c in d.get("characters", [])])
         if not p.characters:
@@ -141,7 +148,7 @@ class Project:
         return cls.from_dict(json.loads(Path(path).read_text(encoding="utf-8")))
 
     def export_csv(self, character: Character, path: str | Path) -> None:
-        headers = ["Nhóm", "Key", "English", "Tiếng Việt", "Icon", "Base", "Bonus", "Tổng"]
+        headers = ["Nhóm", "Key", "English", "Tiếng Việt", "Định nghĩa", "Icon", "Base", "Bonus", "Tổng"]
         headers += [f.label for f in self.global_fields] + ["Trường riêng"]
         with open(path, "w", newline="", encoding="utf-8-sig") as fh:
             w = csv.writer(fh)
@@ -149,26 +156,22 @@ class Project:
             for a in ATTRIBUTES:
                 e = character.stats[a.key]
                 g = GROUP_BY_KEY[a.group]
-                row = [f"{g.numeral}. {g.name_en}", a.key, a.name_en, a.name_vi, self.icon_for(a.key),
+                row = [f"{g.numeral}. {g.name_en}", a.key, a.name_en, a.name_vi, self.description_for(a.key),
+                       self.icon_for(a.key),
                        e.base, e.bonus, e.total(self.max_value)]
                 row += [e.values.get(f.key, f.default_value()) for f in self.global_fields]
                 row.append("; ".join(f"{f.label}={e.values.get(f.key, '')}" for f in e.local_fields))
                 w.writerow(row)
 
 
-def sample_character(name: str = "Tarnished (mẫu)", seed: int = 79, max_value: int = 99) -> Character:
-    """Nhân vật mẫu có chỉ số dao động theo từng nhóm để biểu đồ trông 'có hồn'."""
-    rnd = random.Random(seed)
-    bias = {"physical": 0.55, "vitality": 0.5, "cognitive": 0.4, "mental": 0.6,
-            "combat": 0.7, "magical": 0.35, "technical": 0.3, "social": 0.25}
-    c = Character(name)
-    for a in ATTRIBUTES:
-        center = bias[a.group] * max_value
-        c.stats[a.key].base = int(max(1, min(max_value, rnd.gauss(center, max_value * 0.14))))
-        if rnd.random() < 0.2:
-            c.stats[a.key].bonus = rnd.randint(1, 12)
+def max_character(name: str = "Tarnished (mẫu)", max_value: int = DEFAULT_MAX_VALUE) -> Character:
+    """Nhân vật demo: tối đa ở mọi thứ (Base = thang điểm tối đa, hạng S, đã đạt tối đa)."""
+    c = Character(name, notes="Nhân vật mẫu: mọi chỉ số đều đạt tối đa.")
+    for st in c.stats.values():
+        st.base, st.bonus = max_value, 0
+        st.values.update({"rank": "S", "maxed": True})
     return c
 
 
 def new_project() -> Project:
-    return Project(characters=[sample_character()])
+    return Project(characters=[max_character()])

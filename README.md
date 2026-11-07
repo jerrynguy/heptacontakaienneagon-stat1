@@ -4,6 +4,8 @@ Biểu đồ radar **79 cạnh** (hepta·conta·kai·ennea·gon = 70 + 9) cho *H
 
 ![79 cạnh](docs/screenshot-79.png)
 
+*Ảnh: Tarnished (tối đa, vùng vàng) so sánh với một nhân vật khác (đường nét đứt xanh).*
+
 ## Bắt đầu nhanh
 
 Chọn **một** trong ba cách.
@@ -42,9 +44,9 @@ Yêu cầu: **Windows 10 (bản 1903 trở lên) hoặc Windows 11, 64-bit**. M�
 
 ## Hướng dẫn sử dụng
 
-1. **Chọn thuộc tính**: nhấp vào một icon quanh biểu đồ, hoặc chọn trong danh sách bên trái. Ô tìm kiếm gõ không dấu cũng được.
+1. **Chọn thuộc tính**: nhấp vào một icon quanh biểu đồ, hoặc chọn trong danh sách bên trái. Ô tìm kiếm gõ không dấu cũng được. Rê chuột lên icon hoặc tên thuộc tính để đọc nhanh định nghĩa.
 2. **Nhập chỉ số**: ở panel bên phải, kéo thanh **Base** và nhập **Bonus** (trang bị, buff). Biểu đồ cập nhật ngay.
-3. **Điền thông tin**: điền các trường bên dưới (Hạng, Mô tả, Hiệu ứng, Ghi chú…).
+3. **Điền thông tin**: đọc khối **Định nghĩa** ở đầu panel phải (bấm ✎ để sửa, ↺ để khôi phục bản gốc), rồi điền các trường bên dưới (Hạng, Hiệu ứng, Ghi chú…).
 4. **Thêm trường**: bấm **＋ Thêm trường**. Chọn *trường chung* nếu muốn trường xuất hiện ở cả 79 thuộc tính, hoặc *trường riêng* nếu chỉ thuộc tính này có.
 5. **Đổi icon**: bấm vào icon tròn lớn ở panel phải để chọn emoji khác hoặc ảnh từ máy.
 6. **Xem theo nhóm**: bấm các nút **I Physical … VIII Social** để bật hoặc tắt từng nhóm. Chuột phải vào một nút để chỉ xem nhóm đó.
@@ -67,13 +69,15 @@ Trên biểu đồ: cuộn chuột để phóng to, kéo để di chuyển, nh�
 ![Ảnh xuất](docs/export-example.png)
 
 **Mỗi thuộc tính có**
+- **Định nghĩa** có sẵn: một đoạn mô tả chính xác thuộc tính đó là gì, dùng chung cho mọi nhân vật. Sửa được ngay trong app (lưu kèm dự án) và có cột riêng khi xuất CSV.
 - **Icon**: emoji có sẵn. Bấm vào icon lớn ở panel phải để đổi sang emoji khác hoặc **ảnh từ máy**. Ảnh được nhúng base64 vào file dự án nên mang đi máy khác vẫn còn.
-- **Base** (thanh trượt và ô số), **Bonus** (trang bị/buff), **Tổng** (tự giới hạn trong thang điểm, mặc định 0–99).
+- **Base** (thanh trượt và ô số), **Bonus** (trang bị/buff), **Tổng** (tự giới hạn trong thang điểm, mặc định **0–999**; đổi ở **Trường → Thang điểm tối đa**). Nhân vật mới bắt đầu ở 100 cho mọi chỉ số.
 - **Không giới hạn số trường**, có 6 kiểu: văn bản ngắn, đoạn văn, số, Có/Không, danh sách chọn, đánh giá ★.
-  - *Trường chung*: áp dụng cho cả 79 thuộc tính. Có sẵn 10 trường: Hạng, Độ ưu tiên, Mô tả, Hiệu ứng, Nguồn, Yêu cầu, Trang bị, Tags, Đã tối đa, Ghi chú. Thêm, sửa, xóa, sắp xếp bằng **Trường → Quản lý trường chung** (Ctrl+M).
+  - *Trường chung*: áp dụng cho cả 79 thuộc tính. Có sẵn 9 trường: Hạng, Độ ưu tiên, Hiệu ứng, Nguồn, Yêu cầu, Trang bị, Tags, Đã tối đa, Ghi chú. Thêm, sửa, xóa, sắp xếp bằng **Trường → Quản lý trường chung** (Ctrl+M).
   - *Trường riêng* (◆): chỉ thuộc tính đó có.
 
 **Khác**
+- Nhân vật mẫu *Tarnished* đạt tối đa ở mọi thứ: 999 ở cả 79 chỉ số, hạng S.
 - Nhiều nhân vật trong một dự án: thêm, nhân bản, đổi tên, xóa, ghi chú nhân vật.
 - Tìm thuộc tính không cần gõ dấu ("suc manh" vẫn tìm ra "Sức mạnh").
 - Đặt Base hàng loạt hoặc ngẫu nhiên cho các nhóm đang hiển thị, xóa toàn bộ Bonus.
@@ -85,6 +89,7 @@ Trên biểu đồ: cuộn chuột để phóng to, kéo để di chuyển, nh�
 ```
 hstat/
   attributes.py     8 nhóm + 79 thuộc tính (tên EN/VI, icon, màu)
+  descriptions.py   định nghĩa có sẵn của 79 thuộc tính
   polygon_names.py  tên Hy Lạp của đa giác n cạnh (79 → heptacontakaienneagon)
   model.py          Project → Character → StatEntry → FieldDef; lưu/mở JSON, xuất CSV
   chart.py          widget biểu đồ radar N cạnh (vẽ, hit-test, zoom/pan, xuất PNG)
