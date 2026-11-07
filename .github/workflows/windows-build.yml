@@ -29,23 +29,14 @@ jobs:
       - name: Đóng gói exe
         run: python -m PyInstaller --noconfirm --clean hstat.spec
 
-      - name: Chạy thử exe (mở app, đợi 25 giây, chụp màn hình)
+      - name: Chạy thử exe vừa build (mở 5 lần, mỗi lần phải còn chạy sau 15 giây)
         shell: pwsh
-        run: |
-          $p = Start-Process -FilePath "dist\HeptacontakaienneagonStat.exe" -PassThru
-          Start-Sleep -Seconds 25
-          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
-          $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-          $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
-          $g = [System.Drawing.Graphics]::FromImage($bmp)
-          $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
-          $bmp.Save("$PWD\screenshot.png")
-          if ($p.HasExited) {
-            Write-Error "App đã thoát/crash sau khi mở (exit code $($p.ExitCode))"
-            exit 1
-          }
-          Write-Host "App vẫn đang chạy sau 25 giây: OK"
-          Stop-Process -Id $p.Id -Force
+        run: ./packaging/smoke_test.ps1 -Exe dist/HeptacontakaienneagonStat.exe -Runs 5 -Screenshot "$PWD/screenshot.png"
+
+      - name: Chạy thử exe trong download/ (bản người dùng tải về)
+        if: hashFiles('download/HeptacontakaienneagonStat.exe') != ''
+        shell: pwsh
+        run: ./packaging/smoke_test.ps1 -Exe download/HeptacontakaienneagonStat.exe -Runs 5
 
       - uses: actions/upload-artifact@v4
         if: always()

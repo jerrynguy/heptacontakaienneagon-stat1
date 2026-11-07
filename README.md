@@ -38,9 +38,12 @@ Yêu cầu: **Windows 10 (bản 1903 trở lên) hoặc Windows 11, 64-bit**. M�
 
 ### Cách 3: Tự build file .exe (sau khi sửa code)
 
+Mỗi lần bạn push code lên `main`, **GitHub Actions tự build và chạy thử exe trên Windows**. Bản build nằm ở tab **Actions → lần chạy mới nhất → mục Artifacts**. Muốn tự build trên máy mình thì làm như sau:
+
+
 1. Làm bước 1 và 2 của Cách 2 trên một máy Windows.
 2. Bấm đúp **`build_windows.bat`**. Script tự cài PyInstaller rồi đóng gói theo `hstat.spec`.
-3. File mới nằm ở `dist\HeptacontakaienneagonStat.exe`. Muốn cập nhật bản cho người khác tải thì chép file đó đè lên `download\HeptacontakaienneagonStat.exe`.
+3. File mới nằm ở `dist\HeptacontakaienneagonStat.exe`. Chạy thử nhanh: `pwsh packaging\smoke_test.ps1 -Exe dist\HeptacontakaienneagonStat.exe` (mở app 5 lần, kiểm tra không bị tắt đột ngột). Muốn cập nhật bản cho người khác tải thì chép file đó đè lên `download\HeptacontakaienneagonStat.exe`.
 
 ## Hướng dẫn sử dụng
 
@@ -104,6 +107,8 @@ hstat.spec                 cấu hình PyInstaller để đóng gói exe
 packaging/version_info.txt thông tin phiên bản hiển thị trong Properties của exe
 build_windows.bat          build exe trên Windows bằng một cú bấm đúp
 requirements-build.txt     thư viện cần để build
+packaging/smoke_test.ps1   chạy thử exe nhiều lần, kiểm tra không bị crash
+.github/workflows/         GitHub Actions: tự build và chạy thử exe trên Windows
 tools_make_icon.py         vẽ lại icon ứng dụng
 download/                  file .exe build sẵn để tải về
 ```
