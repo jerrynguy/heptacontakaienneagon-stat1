@@ -10,7 +10,7 @@ Chọn **một** trong ba cách.
 
 ### Cách 1: Tải file .exe (Windows, không cần cài gì)
 
-1. Tải file **[HeptacontakaienneagonStat.exe](https://github.com/jerrynguy/heptacontakaienneagon-stat1/releases/latest/download/HeptacontakaienneagonStat.exe)** (~28 MB). File này cũng có ở mục [Releases](https://github.com/jerrynguy/heptacontakaienneagon-stat1/releases/latest).
+1. Tải file **[HeptacontakaienneagonStat.exe](https://github.com/jerrynguy/heptacontakaienneagon-stat1/raw/main/download/HeptacontakaienneagonStat.exe)** (~28 MB). Bấm vào link là tải về luôn. File cũng nằm trong thư mục [`download/`](download/) của repo.
 2. Bấm đúp vào file vừa tải.
 3. Nếu Windows báo *"Windows protected your PC"*, bấm **More info → Run anyway**. Cảnh báo này xuất hiện vì exe chưa được ký số.
 
@@ -38,7 +38,7 @@ Yêu cầu: **Windows 10 (bản 1903 trở lên) hoặc Windows 11, 64-bit**. M�
 
 1. Làm bước 1 và 2 của Cách 2 trên một máy Windows.
 2. Bấm đúp **`build_windows.bat`**. Script tự cài PyInstaller rồi đóng gói theo `hstat.spec`.
-3. File mới nằm ở `dist\HeptacontakaienneagonStat.exe`.
+3. File mới nằm ở `dist\HeptacontakaienneagonStat.exe`. Muốn cập nhật bản cho người khác tải thì chép file đó đè lên `download\HeptacontakaienneagonStat.exe`.
 
 ## Hướng dẫn sử dụng
 
@@ -100,6 +100,7 @@ packaging/version_info.txt thông tin phiên bản hiển thị trong Properties
 build_windows.bat          build exe trên Windows bằng một cú bấm đúp
 requirements-build.txt     thư viện cần để build
 tools_make_icon.py         vẽ lại icon ứng dụng
+download/                  file .exe build sẵn để tải về
 ```
 
 Chạy kiểm thử: `pip install pytest` rồi `python -m pytest tests`.
