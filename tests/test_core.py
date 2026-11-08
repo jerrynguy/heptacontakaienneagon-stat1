@@ -90,3 +90,43 @@ def test_ring_values_are_round_numbers():
     from hstat.chart import ring_values
     assert ring_values(999) == [200, 400, 600, 800, 999]
     assert ring_values(99) == [20, 40, 60, 80, 99]
+
+
+def _old_file(max_value=99, base=99, bonus=4, description=""):
+    """File .hstat.json như bản cũ lưu ra: version 1, thang 0–99, có trường chung "Mô tả"."""
+    stats = {a.key: {"base": base, "bonus": bonus,
+                     "values": {"rank": "—", "description": description}, "local_fields": []}
+             for a in ATTRIBUTES}
+    return {"format": "heptacontakaienneagon-stat", "version": 1, "max_value": max_value, "icons": {},
+            "global_fields": [{"key": "rank", "label": "Hạng", "kind": "choice", "options": ["—", "S"]},
+                              {"key": "description", "label": "Mô tả", "kind": "longtext", "options": []}],
+            "characters": [{"name": "Tarnished (mẫu)", "notes": "", "stats": stats}]}
+
+
+def test_old_99_file_is_upgraded_to_999(tmp_path):
+    p = Project.from_dict(_old_file())
+    assert p.max_value == 999
+    st = p.characters[0].stats["strength"]
+    assert (st.base, st.bonus, st.total(p.max_value)) == (999, 40, 999)
+    assert [f.key for f in p.global_fields] == ["rank"]          # trường "Mô tả" trống đã bỏ
+    assert "description" not in st.values
+    assert len(p.upgrade_notes) == 2
+    half = Project.from_dict(_old_file(base=50, bonus=-99)).characters[0].stats["hp"]
+    assert (half.base, half.bonus) == (505, -999)
+    # Lưu lại rồi mở: đã là bản mới, không nâng cấp lần nữa.
+    path = tmp_path / "old.hstat.json"
+    p.save(path)
+    q = Project.load(path)
+    assert q.upgrade_notes == [] and q.max_value == 999 and q.characters[0].stats["strength"].base == 999
+
+
+def test_upgrade_keeps_user_choices():
+    p = Project.from_dict(_old_file(max_value=500, base=250))  # thang tự chọn thì giữ nguyên
+    assert p.max_value == 500 and p.characters[0].stats["speed"].base == 250
+    p = Project.from_dict(_old_file(description="ghi chú của tôi"))  # "Mô tả" có nội dung thì giữ
+    assert "description" in [f.key for f in p.global_fields]
+    assert p.characters[0].stats["speed"].values["description"] == "ghi chú của tôi"
+    # File lưu bằng bản thang 999 (có khóa "descriptions") nhưng người dùng tự đặt 99: không đụng tới.
+    d = {**_old_file(), "descriptions": {}}
+    p = Project.from_dict(d)
+    assert p.max_value == 99 and p.upgrade_notes == [] and d["max_value"] == 99
