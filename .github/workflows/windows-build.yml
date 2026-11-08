@@ -1,0 +1,47 @@
+name: Windows build
+
+# Build file .exe trên máy Windows thật của GitHub, chạy thử rồi đính kèm kết quả (mục Artifacts).
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["download/**", "docs/**", "**.md"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cài thư viện
+        run: python -m pip install -r requirements-build.txt pytest
+
+      - name: Kiểm thử
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q tests
+
+      - name: Đóng gói exe
+        run: python -m PyInstaller --noconfirm --clean hstat.spec
+
+      - name: Chạy thử exe vừa build (mở 5 lần, mỗi lần phải còn chạy sau 15 giây)
+        shell: pwsh
+        run: ./packaging/smoke_test.ps1 -Exe dist/HeptacontakaienneagonStat.exe -Runs 5 -Screenshot "$PWD/screenshot.png"
+
+      - name: Chạy thử exe trong download/ (bản người dùng tải về)
+        if: hashFiles('download/HeptacontakaienneagonStat.exe') != ''
+        shell: pwsh
+        run: ./packaging/smoke_test.ps1 -Exe download/HeptacontakaienneagonStat.exe -Runs 5
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: HeptacontakaienneagonStat-windows
+          path: |
+            dist/HeptacontakaienneagonStat.exe
+            screenshot.png

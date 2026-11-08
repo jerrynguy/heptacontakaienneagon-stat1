@@ -12,6 +12,8 @@ QLabel#section { color: #C8A55A; font-weight: bold; letter-spacing: 1.5px; font-
                  padding-top: 8px; border-bottom: 1px solid #2c2f37; padding-bottom: 3px; }
 QLabel#attrTitle { font-size: 19px; font-weight: bold; color: #f1e9d6; }
 QLabel#muted { color: #8C8F98; }
+QLabel#definition { color: #d9d1bf; background: #1b1d23; border-left: 3px solid #C8A55A;
+                    border-radius: 4px; padding: 8px 10px; line-height: 140%; }
 QLabel#chartTitle { color: #C8A55A; font-size: 17px; font-weight: bold; letter-spacing: 2px; }
 QFrame#infoBar { background: #1b1d23; border: 1px solid #2a2d35; border-radius: 10px; }
 QTreeWidget { background: #17181d; border: 1px solid #2a2d35; border-radius: 6px; }

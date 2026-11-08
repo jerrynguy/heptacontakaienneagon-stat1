@@ -6,7 +6,7 @@ from typing import Any, Callable
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QDoubleSpinBox, QGridLayout,
-                               QHBoxLayout, QLabel, QLineEdit, QMenu, QPlainTextEdit,
+                               QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMenu, QPlainTextEdit,
                                QProgressBar, QPushButton, QSizePolicy, QSlider, QSpinBox,
                                QToolButton, QVBoxLayout, QWidget)
 
@@ -91,6 +91,7 @@ class AttributeEditor(QWidget):
     statChanged = Signal(str)        # base/bonus đổi → vẽ lại biểu đồ
     edited = Signal()                # bất kỳ thay đổi nào → đánh dấu chưa lưu
     iconChanged = Signal(str)
+    descriptionChanged = Signal(str)
     fieldsStructureChanged = Signal()
     manageFieldsRequested = Signal()
 
@@ -134,6 +135,26 @@ class AttributeEditor(QWidget):
         names.addWidget(self.group_lb)
         head.addLayout(names, 1)
         root.addLayout(head)
+
+        # --- Định nghĩa (mô tả chung của thuộc tính, dùng cho mọi nhân vật)
+        dhdr = QHBoxLayout()
+        dhdr.addWidget(_section("ĐỊNH NGHĨA"), 1)
+        self.desc_edit_btn = QToolButton()
+        self.desc_edit_btn.setText("✎")
+        self.desc_edit_btn.setToolTip("Sửa định nghĩa (áp dụng cho mọi nhân vật trong dự án)")
+        self.desc_edit_btn.clicked.connect(self._edit_description)
+        self.desc_reset_btn = QToolButton()
+        self.desc_reset_btn.setText("↺")
+        self.desc_reset_btn.setToolTip("Khôi phục định nghĩa gốc")
+        self.desc_reset_btn.clicked.connect(self._reset_description)
+        dhdr.addWidget(self.desc_edit_btn)
+        dhdr.addWidget(self.desc_reset_btn)
+        root.addLayout(dhdr)
+        self.desc_lb = QLabel()
+        self.desc_lb.setObjectName("definition")
+        self.desc_lb.setWordWrap(True)
+        self.desc_lb.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        root.addWidget(self.desc_lb)
 
         # --- Chỉ số
         root.addWidget(_section("CHỈ SỐ"))
@@ -185,8 +206,8 @@ class AttributeEditor(QWidget):
         btns.addWidget(add)
         btns.addWidget(manage)
         root.addLayout(btns)
-        hint = QLabel("◆ = trường riêng của thuộc tính này. Các trường còn lại là trường chung "
-                      "cho cả 79 thuộc tính.")
+        hint = QLabel("◆ = trường riêng của thuộc tính này (của nhân vật đang chọn). Các trường còn lại "
+                      "là trường chung cho cả 79 thuộc tính.")
         hint.setObjectName("muted")
         hint.setWordWrap(True)
         root.addWidget(hint)
@@ -217,6 +238,7 @@ class AttributeEditor(QWidget):
                                     "QToolButton::menu-indicator { image: none; }")
         self.name_en.setText(a.name_en)
         self.name_vi.setText(a.name_vi)
+        self._show_description()
         self.group_lb.setText(f"<span style='color:{g.color}'>■ {g.numeral}. {g.name_en}</span><br>"
                               f"<span style='color:#8C8F98'>{g.name_vi}</span>")
         e = self.entry
@@ -315,6 +337,32 @@ class AttributeEditor(QWidget):
         self.entry.local_fields.remove(f)
         self.entry.values.pop(f.key, None)
         self._build_fields()
+        self.edited.emit()
+
+    def _show_description(self) -> None:
+        self.desc_lb.setText(self.project.description_for(self.key))
+        self.desc_reset_btn.setVisible(self.key in self.project.descriptions)
+
+    def _edit_description(self) -> None:
+        a = ATTR_BY_KEY[self.key]
+        text, ok = QInputDialog.getMultiLineText(
+            self, "Sửa định nghĩa", f"Định nghĩa của {a.name_en} ({a.name_vi}):",
+            self.project.description_for(self.key))
+        if not ok:
+            return
+        text = " ".join(text.split())
+        if not text or text == a.description:
+            self.project.descriptions.pop(self.key, None)
+        else:
+            self.project.descriptions[self.key] = text
+        self._show_description()
+        self.descriptionChanged.emit(self.key)
+        self.edited.emit()
+
+    def _reset_description(self) -> None:
+        self.project.descriptions.pop(self.key, None)
+        self._show_description()
+        self.descriptionChanged.emit(self.key)
         self.edited.emit()
 
     def _set_icon(self, icon: str | None) -> None:

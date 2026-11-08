@@ -31,6 +31,20 @@ def _font(px: float, bold: bool = False, spacing: float = 0) -> QFont:
     return f
 
 
+def ring_values(mx: float) -> list[float]:
+    """Các mốc lưới tròn số, vd. 999 → [200, 400, 600, 800, 999]; 99 → [20, 40, 60, 80, 99]."""
+    if mx <= 0:
+        return [1.0]
+    raw = mx / 5
+    mag = 10 ** math.floor(math.log10(raw))
+    step = next(m * mag for m in (1, 2, 2.5, 5, 10) if m * mag >= raw)
+    vals, v = [], step
+    while v < mx * 0.93:
+        vals.append(v)
+        v += step
+    return [*vals, mx]
+
+
 def _alpha(c: QColor, a: int) -> QColor:
     c = QColor(c)
     c.setAlpha(a)
@@ -180,7 +194,8 @@ class StatChart(QWidget):
             p.drawPolygon(poly)
 
         # 2) Lưới: các vòng đa giác đồng tâm
-        rings = [0.2, 0.4, 0.6, 0.8, 1.0]
+        ring_vals = ring_values(mx)
+        rings = [v / mx for v in ring_vals]
         p.setBrush(Qt.BrushStyle.NoBrush)
         for k, fr in enumerate(rings):
             p.setPen(QPen(_alpha(GOLD, 150) if fr == 1.0 else GRID, 1.6 if fr == 1.0 else 1.0))
@@ -199,10 +214,10 @@ class StatChart(QWidget):
         p.setFont(_font(max(9, min(12, R / 28))))
         p.setPen(MUTED)
         lab_a = ang[0] + step / 2
-        for fr in rings:
+        for fr, val in zip(rings, ring_vals):
             pt = self._pt(c, R * fr, lab_a)
             p.drawText(QRectF(pt.x() + 3, pt.y() - 8, 40, 16), Qt.AlignmentFlag.AlignLeft
-                       | Qt.AlignmentFlag.AlignVCenter, str(round(mx * fr)))
+                       | Qt.AlignmentFlag.AlignVCenter, f"{val:g}")
 
         def poly_for(ch: Character, use_base: bool = False) -> QPolygonF:
             pts = []
@@ -350,6 +365,9 @@ class StatChart(QWidget):
         s = sum(t for t, _ in totals)
         hi = max(totals, key=lambda t: t[0])
         lo = min(totals, key=lambda t: t[0])
+        if hi[0] == lo[0]:
+            return [f"Tổng: {s}  ·  Trung bình: {s / len(attrs):.1f}",
+                    f"Mọi chỉ số đều bằng {hi[0]}" + (" (tối đa)" if hi[0] == mx else "")]
         return [f"Tổng: {s}  ·  Trung bình: {s / len(attrs):.1f}",
                 f"Cao nhất: {hi[1].name_en} ({hi[0]})",
                 f"Thấp nhất: {lo[1].name_en} ({lo[0]})"]

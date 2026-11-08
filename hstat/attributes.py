@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .descriptions import DESCRIPTIONS
+
 
 @dataclass(frozen=True)
 class Group:
@@ -22,6 +24,7 @@ class AttributeDef:
     name_en: str
     name_vi: str
     icon: str
+    description: str = ""
 
 
 GROUPS: list[Group] = [
@@ -137,7 +140,7 @@ _RAW: dict[str, list[tuple[str, str, str, str]]] = {
 }
 
 ATTRIBUTES: list[AttributeDef] = [
-    AttributeDef(key, group, en, vi, icon)
+    AttributeDef(key, group, en, vi, icon, DESCRIPTIONS.get(key, ""))
     for group, rows in _RAW.items()
     for key, en, vi, icon in rows
 ]
@@ -147,3 +150,4 @@ ATTR_BY_KEY: dict[str, AttributeDef] = {a.key: a for a in ATTRIBUTES}
 assert len(ATTRIBUTES) == 79, len(ATTRIBUTES)
 assert len(ATTR_BY_KEY) == 79, "trùng key thuộc tính"
 assert len({a.icon for a in ATTRIBUTES}) == 79, "trùng icon"
+assert all(a.description for a in ATTRIBUTES), "thiếu mô tả"

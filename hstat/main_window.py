@@ -1,15 +1,16 @@
 """Cửa sổ chính: danh sách thuộc tính | biểu đồ 79 cạnh | panel chỉnh sửa."""
 from __future__ import annotations
 
+import html
 import random
 import unicodedata
 from pathlib import Path
 
 from PySide6.QtCore import QRectF, QSettings, QSize, QStandardPaths, Qt
-from PySide6.QtGui import QAction, QColor, QKeySequence, QPainter
+from PySide6.QtGui import QAction, QColor, QCursor, QKeySequence, QPainter
 from PySide6.QtWidgets import (QComboBox, QFileDialog, QFrame, QHBoxLayout, QHeaderView, QInputDialog, QLabel,
                                QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QScrollArea,
-                               QSplitter, QStyle, QStyledItemDelegate, QToolButton, QTreeWidget,
+                               QSplitter, QStyle, QStyledItemDelegate, QToolButton, QToolTip, QTreeWidget,
                                QTreeWidgetItem, QVBoxLayout, QWidget)
 
 from . import __version__
@@ -18,7 +19,7 @@ from .chart import StatChart
 from .dialogs import FieldManagerDialog
 from .editor import AttributeEditor, _section
 from .icons import color_dot, icon_pixmap, qicon
-from .model import Character, Project, new_project
+from .model import DEFAULT_BASE, Character, Project, new_project
 from .polygon_names import polygon_name
 
 APP_NAME = "Heptacontakaienneagon Stat"
@@ -207,7 +208,7 @@ class MainWindow(QMainWindow):
 
         self.chart = StatChart()
         self.chart.attributeSelected.connect(lambda k: self.select_attr(k))
-        self.chart.attributeHovered.connect(self._update_info)
+        self.chart.attributeHovered.connect(self._on_chart_hover)
         cv.addWidget(self.chart, 1)
         hint = QLabel("Nhấp icon: chọn · Cuộn chuột: phóng to · Kéo: di chuyển · "
                       "Nhấp đúp nền: đặt lại · ←/→: chuyển thuộc tính")
@@ -220,6 +221,7 @@ class MainWindow(QMainWindow):
         self.editor.statChanged.connect(self._on_stat_changed)
         self.editor.edited.connect(self.mark_dirty)
         self.editor.iconChanged.connect(self._on_icon_changed)
+        self.editor.descriptionChanged.connect(lambda _k: self._refresh_tree_values())
         self.editor.manageFieldsRequested.connect(self.manage_fields)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -291,7 +293,6 @@ class MainWindow(QMainWindow):
             for a in (a for a in ATTRIBUTES if a.group == g.key):
                 it = QTreeWidgetItem([f"{a.name_en}\n{a.name_vi}"])
                 it.setData(0, KEY_ROLE, a.key)
-                it.setToolTip(0, f"{a.name_en} — {a.name_vi}")
                 gi.addChild(it)
                 self.tree_items[a.key] = it
             gi.setExpanded(True)
@@ -311,6 +312,7 @@ class MainWindow(QMainWindow):
                 it = self.tree_items[a.key]
                 it.setIcon(0, qicon(self.project.icon_for(a.key), 44))
                 it.setData(1, BAR_ROLE, (t, mx, g.color, str(t)))
+                it.setToolTip(0, self._tooltip_html(a.key))
             avg = sum(tot) / len(tot)
             self.group_items[g.key].setData(1, BAR_ROLE, (avg, mx, g.color, f"TB {avg:.0f}"))
         self.tree.viewport().update()
@@ -364,6 +366,24 @@ class MainWindow(QMainWindow):
                                f" · {self.character.name}")
         name = Path(self.path).name if self.path else "Chưa lưu"
         self.setWindowTitle(f"{APP_NAME} — {name}{' *' if self.dirty else ''}")
+
+    def _tooltip_html(self, key: str, with_value: bool = False) -> str:
+        a = ATTR_BY_KEY[key]
+        g = GROUP_BY_KEY[a.group]
+        value = ""
+        if with_value:
+            mx = self.project.max_value
+            value = f" · <b style='color:#C8A55A'>{self.character.stats[key].total(mx)}</b>/{mx}"
+        return (f"<qt><b>{a.name_en}</b> — {a.name_vi}<br>"
+                f"<span style='color:{g.color}'>{g.numeral}. {g.name_en}</span>{value}"
+                f"<p style='margin-top:6px'>{html.escape(self.project.description_for(key))}</p></qt>")
+
+    def _on_chart_hover(self, key: str | None) -> None:
+        self._update_info(key)
+        if key:
+            QToolTip.showText(QCursor.pos(), self._tooltip_html(key, with_value=True), self.chart)
+        else:
+            QToolTip.hideText()
 
     def _update_info(self, key: str | None = None) -> None:
         key = key or self.selected_key
@@ -487,7 +507,7 @@ class MainWindow(QMainWindow):
         attrs = self._visible()
         v, ok = QInputDialog.getInt(self, "Đặt Base hàng loạt",
                                     f"Giá trị Base cho {len(attrs)} thuộc tính đang hiển thị:",
-                                    10, 0, self.project.max_value)
+                                    min(DEFAULT_BASE, self.project.max_value), 0, self.project.max_value)
         if ok:
             for a in attrs:
                 self.character.stats[a.key].base = v
