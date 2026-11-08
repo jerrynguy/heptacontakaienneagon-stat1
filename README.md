@@ -12,7 +12,7 @@ Chọn **một** trong ba cách.
 
 ### Cách 1: Tải file .exe (Windows, không cần cài gì)
 
-1. Tải file **[HeptacontakaienneagonStat.exe](https://github.com/jerrynguy/heptacontakaienneagon-stat1/raw/main/download/HeptacontakaienneagonStat.exe)** (~28 MB). Bấm vào link là tải về luôn. File cũng nằm trong thư mục [`download/`](download/) của repo.
+1. Tải file **[HeptacontakaienneagonStat.exe](https://github.com/jerrynguy/heptacontakaienneagon-stat1/raw/main/download/HeptacontakaienneagonStat.exe)** (~30 MB). Bấm vào link là tải về luôn. File cũng nằm trong thư mục [`download/`](download/) của repo.
 2. Bấm đúp vào file vừa tải.
 3. Nếu Windows báo *"Windows protected your PC"*, bấm **More info → Run anyway**. Cảnh báo này xuất hiện vì exe chưa được ký số.
 
