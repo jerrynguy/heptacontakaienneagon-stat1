@@ -6,7 +6,7 @@ import random
 import unicodedata
 from pathlib import Path
 
-from PySide6.QtCore import QRectF, QSettings, QSize, QStandardPaths, Qt
+from PySide6.QtCore import QRectF, QSettings, QSize, QStandardPaths, Qt, QTimer
 from PySide6.QtGui import QAction, QColor, QCursor, QKeySequence, QPainter
 from PySide6.QtWidgets import (QComboBox, QFileDialog, QFrame, QHBoxLayout, QHeaderView, QInputDialog, QLabel,
                                QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QScrollArea,
@@ -587,6 +587,14 @@ class MainWindow(QMainWindow):
         self.path, self.char_index, self.dirty = path, 0, False
         self.settings.setValue("last_file", path)
         self.statusBar().showMessage(f"Đã mở {path}", 5000)
+        if self.project.upgrade_notes:
+            # File từ bản cũ đã được nâng cấp trong bộ nhớ: đánh dấu chưa lưu và báo người dùng
+            # (hiện sau khi cửa sổ đã mở, kể cả khi app tự mở lại file gần nhất lúc khởi động).
+            self.dirty = True
+            notes = "".join(f"<li>{html.escape(n)}</li>" for n in self.project.upgrade_notes)
+            msg = (f"<p>File <b>{html.escape(Path(path).name)}</b> được lưu từ bản cũ và đã được "
+                   f"nâng cấp:</p><ul>{notes}</ul><p>Bấm <b>Ctrl+S</b> để lưu lại theo bản mới.</p>")
+            QTimer.singleShot(300, lambda: QMessageBox.information(self, "Đã nâng cấp file cũ", msg))
 
     def save(self) -> bool:
         if not self.path:

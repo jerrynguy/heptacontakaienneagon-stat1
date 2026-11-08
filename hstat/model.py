@@ -14,7 +14,41 @@ DEFAULT_MAX_VALUE = 999   # thang điểm tối đa mặc định của mỗi ch
 DEFAULT_BASE = 100        # giá trị khởi đầu của nhân vật mới (10% thang điểm)
 
 FILE_FORMAT = "heptacontakaienneagon-stat"
-FILE_VERSION = 1
+FILE_VERSION = 2          # 2: thang mặc định 999, có khối Định nghĩa thay cho trường "Mô tả"
+OLD_DEFAULT_MAX_VALUE = 99  # thang mặc định của các bản trước
+
+
+def _upgrade_old_file(d: dict) -> list[str]:
+    """Nâng file lưu từ bản cũ (thang 0–99, trường "Mô tả" riêng) lên bản hiện tại, sửa thẳng vào d.
+
+    Trả về danh sách thay đổi đã làm (rỗng nếu file không cần nâng cấp).
+    """
+    if int(d.get("version", 1)) >= 2 or "descriptions" in d:
+        return []
+    notes = []
+    if int(d.get("max_value", OLD_DEFAULT_MAX_VALUE)) == OLD_DEFAULT_MAX_VALUE:
+        # Quy đổi theo tỷ lệ để hình dạng biểu đồ giữ nguyên: 99 → 999, 50 → 505, bonus 4 → 40.
+        k = DEFAULT_MAX_VALUE / OLD_DEFAULT_MAX_VALUE
+        mx = DEFAULT_MAX_VALUE
+        for c in d.get("characters", []):
+            for s in c.get("stats", {}).values():
+                if "base" in s:
+                    s["base"] = max(0, min(mx, round(int(s["base"]) * k)))
+                if "bonus" in s:
+                    s["bonus"] = max(-mx, min(mx, round(int(s["bonus"]) * k)))
+        d["max_value"] = mx
+        notes.append(f"Thang điểm 0–{OLD_DEFAULT_MAX_VALUE} được chuyển sang 0–{mx}; "
+                     f"mọi chỉ số được quy đổi theo tỷ lệ ({OLD_DEFAULT_MAX_VALUE} → {mx}).")
+    # Bản cũ có trường chung "Mô tả"; nay đã có khối Định nghĩa. Chỉ bỏ khi trường đó còn trống.
+    stats = [s for c in d.get("characters", []) for s in c.get("stats", {}).values()]
+    fields = d.get("global_fields", [])
+    if (any(f.get("key") == "description" for f in fields)
+            and not any(str(s.get("values", {}).get("description", "")).strip() for s in stats)):
+        d["global_fields"] = [f for f in fields if f.get("key") != "description"]
+        for s in stats:
+            s.get("values", {}).pop("description", None)
+        notes.append("Bỏ trường “Mô tả” còn trống, vì mỗi thuộc tính giờ đã có Định nghĩa sẵn.")
+    return notes
 
 FIELD_KINDS = {
     "text": "Văn bản ngắn",
@@ -111,6 +145,8 @@ class Project:
     descriptions: dict[str, str] = field(default_factory=dict)  # mô tả đã sửa (ghi đè mặc định)
     global_fields: list[FieldDef] = field(default_factory=default_global_fields)
     characters: list[Character] = field(default_factory=list)
+    # Các thay đổi đã làm khi mở một file từ bản cũ (không lưu vào file).
+    upgrade_notes: list[str] = field(default_factory=list, repr=False, compare=False)
 
     def icon_for(self, attr_key: str) -> str:
         return self.icons.get(attr_key) or ATTR_BY_KEY[attr_key].icon
@@ -132,7 +168,9 @@ class Project:
     def from_dict(cls, d: dict) -> "Project":
         if d.get("format") != FILE_FORMAT:
             raise ValueError("Không phải file của Heptacontakaienneagon Stat")
-        p = cls(max_value=int(d.get("max_value", DEFAULT_MAX_VALUE)), icons=dict(d.get("icons", {})),
+        d = json.loads(json.dumps(d))  # bản sao sâu: nâng cấp không đụng vào dict của người gọi
+        notes = _upgrade_old_file(d)
+        p = cls(upgrade_notes=notes,max_value=int(d.get("max_value", DEFAULT_MAX_VALUE)), icons=dict(d.get("icons", {})),
                 descriptions=dict(d.get("descriptions", {})),
                 global_fields=[FieldDef.from_dict(x) for x in d.get("global_fields", [])],
                 characters=[Character.from_dict(c) for c in d.get("characters", [])])

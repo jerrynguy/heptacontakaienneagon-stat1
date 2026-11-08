@@ -85,6 +85,7 @@ Trên biểu đồ: cuộn chuột để phóng to, kéo để di chuyển, nh�
 - Tìm thuộc tính không cần gõ dấu ("suc manh" vẫn tìm ra "Sức mạnh").
 - Đặt Base hàng loạt hoặc ngẫu nhiên cho các nhóm đang hiển thị, xóa toàn bộ Bonus.
 - Lưu/mở file `.hstat.json` (UTF-8, đọc được bằng mắt). App tự mở lại file gần nhất.
+- File lưu từ bản cũ (thang 0–99) tự được nâng lên thang 0–999 khi mở: mọi chỉ số quy đổi theo tỷ lệ (99 → 999) nên hình biểu đồ giữ nguyên, trường "Mô tả" còn trống được bỏ vì đã có Định nghĩa. App báo rõ những gì đã đổi; bấm Ctrl+S để lưu lại. File có thang tự chọn khác 99 được giữ nguyên.
 - Xuất CSV mở được bằng Excel, không lỗi font tiếng Việt (Ctrl+Shift+E).
 
 ## Cấu trúc
